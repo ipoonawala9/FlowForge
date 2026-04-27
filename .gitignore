@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment variables — never commit these
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+
+# Build output
+dist/
+dist-ssr/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
