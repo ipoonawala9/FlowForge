@@ -31,17 +31,27 @@ async function getWorkflowById(req, res) {
   try {
     const id = parseInt(req.params.id);
     const workflow = await workflowService.getWorkflowById(id);
-
-    if (!workflow) {
-      return res.status(404).json({ message: "Workflow not found" });
-    }
-
-    // use req.userId — set by authMiddleware
-    if (workflow.user_id !== req.userId) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
+    if (!workflow) return res.status(404).json({ message: "Workflow not found" });
+    if (workflow.user_id !== req.userId) return res.status(403).json({ message: "Access denied" });
     res.json(workflow);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Database error" });
+  }
+}
+
+async function renameWorkflow(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    const workflow = await workflowService.getWorkflowById(id);
+    if (!workflow) return res.status(404).json({ message: "Workflow not found" });
+    if (workflow.user_id !== req.userId) return res.status(403).json({ message: "Access denied" });
+    await workflowService.renameWorkflow(id, name.trim());
+    res.json({ message: "Workflow renamed" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Database error" });
@@ -51,20 +61,10 @@ async function getWorkflowById(req, res) {
 async function deleteWorkflow(req, res) {
   try {
     const id = parseInt(req.params.id);
-
-    // fetch first to verify ownership
     const workflow = await workflowService.getWorkflowById(id);
-
-    if (!workflow) {
-      return res.status(404).json({ message: "Workflow not found" });
-    }
-
-    if (workflow.user_id !== req.userId) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
+    if (!workflow) return res.status(404).json({ message: "Workflow not found" });
+    if (workflow.user_id !== req.userId) return res.status(403).json({ message: "Access denied" });
     await workflowService.deleteWorkflow(id);
-
     res.json({ message: "Workflow deleted" });
   } catch (err) {
     console.error(err);
@@ -86,6 +86,7 @@ module.exports = {
   getWorkflows,
   createWorkflow,
   getWorkflowById,
+  renameWorkflow,
   deleteWorkflow,
   getWorkflowRuns
 };

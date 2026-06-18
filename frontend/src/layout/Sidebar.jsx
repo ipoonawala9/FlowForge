@@ -11,7 +11,7 @@ const navItems = [
 function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -49,8 +49,16 @@ function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom */}
-      <div className="p-3 border-t border-white/5">
+      {/* User info + logout */}
+      <div className="p-3 border-t border-white/5 space-y-1">
+        {user && (
+          <div className="px-3 py-2 mb-1">
+            <p className="text-white text-xs font-medium truncate">{user.email}</p>
+            <p className="text-slate-600 text-xs mt-0.5">
+              Since {new Date(user.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+            </p>
+          </div>
+        )}
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"

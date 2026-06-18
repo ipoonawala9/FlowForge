@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   ReactFlow,
   Controls,
@@ -10,7 +10,7 @@ import {
   BackgroundVariant
 } from "@xyflow/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, Play, ArrowLeft, CheckCircle, XCircle, Loader } from "lucide-react";
+import { Save, Play, ArrowLeft, CheckCircle, XCircle, Loader, Pencil } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 
 import DashboardLayout from "../layout/DashboardLayout";
@@ -62,8 +62,31 @@ function WorkflowBuilder() {
   const [executing, setExecuting] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [runRefresh, setRunRefresh] = useState(0);
+  const [workflowName, setWorkflowName] = useState("Workflow Builder");
+  const [editingName, setEditingName] = useState(false);
+  const nameInputRef = useRef(null);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+
+  // focus name input when editing
+  useEffect(() => {
+    if (editingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [editingName]);
+
+  const commitRename = async () => {
+    const trimmed = workflowName.trim();
+    if (!trimmed) { setEditingName(false); return; }
+    try {
+      await api.patch(`/workflows/${id}`, { name: trimmed });
+      setEditingName(false);
+    } catch {
+      addToast("Failed to rename workflow", "error");
+      setEditingName(false);
+    }
+  };
 
   const addToast = (message, type = "success") => {
     const toastId = Date.now();
@@ -230,6 +253,12 @@ function WorkflowBuilder() {
         const actions = res.data.actions || [];
         const dbEdges = res.data.edges || [];
 
+        // also fetch the workflow name
+        try {
+          const wfRes = await api.get(`/workflows/${id}`);
+          if (wfRes.data?.name) setWorkflowName(wfRes.data.name);
+        } catch { /* non-fatal */ }
+
         const loadedNodes = actions.map((action) => {
           const config = typeof action.action_config === "string"
             ? JSON.parse(action.action_config)
@@ -283,7 +312,27 @@ function WorkflowBuilder() {
             >
               <ArrowLeft size={16} />
             </button>
-            <span className="text-sm font-medium text-white">Workflow Builder</span>
+            {editingName ? (
+              <input
+                ref={nameInputRef}
+                value={workflowName}
+                onChange={(e) => setWorkflowName(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitRename();
+                  if (e.key === "Escape") setEditingName(false);
+                }}
+                className="bg-white/10 border border-indigo-500/50 rounded-lg px-2 py-1 text-white text-sm outline-none w-48"
+              />
+            ) : (
+              <button
+                onClick={() => setEditingName(true)}
+                className="text-sm font-medium text-white hover:text-indigo-400 transition-colors flex items-center gap-1.5 group"
+              >
+                {workflowName}
+                <Pencil size={11} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button

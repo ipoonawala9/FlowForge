@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import WorkflowBuilder from "./pages/WorkflowBuilder";
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
+import NotFound from "./pages/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -19,6 +20,7 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/workflow/:id" element={<ProtectedRoute><WorkflowBuilder /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

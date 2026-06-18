@@ -61,10 +61,18 @@ async function getRunsByWorkflow(workflowId) {
     return rows;
 }
 
+async function renameWorkflow(id, name) {
+    await db.query(
+        "UPDATE workflows SET name = ? WHERE id = ?",
+        [name, id]
+    );
+}
+
 module.exports = {
     getAllWorkflows,
     getWorkflowById,
     createWorkflow,
+    renameWorkflow,
     deleteWorkflow,
     getWorkflowByIdForUser,
     getRunsByWorkflow
