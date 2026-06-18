@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS workflows (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     user_id INT NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -50,5 +51,16 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
     status ENUM('running', 'success', 'failed') NOT NULL DEFAULT 'running',
     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP NULL,
+    FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE
+);
+
+-- one schedule per workflow; cron_expression drives node-cron
+CREATE TABLE IF NOT EXISTS workflow_schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    workflow_id INT NOT NULL UNIQUE,
+    cron_expression VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    last_run_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE
 );

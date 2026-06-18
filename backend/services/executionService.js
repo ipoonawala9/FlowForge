@@ -56,7 +56,7 @@ async function walkGraph(workflowId, nodeMap, adj, startNodeId, context, runId) 
       return;
     }
 
-    // delay node — enqueue continuation instead of blocking
+    
     if (action.action_type === "delay") {
       const config = typeof action.action_config === "string"
         ? JSON.parse(action.action_config)
@@ -71,7 +71,7 @@ async function walkGraph(workflowId, nodeMap, adj, startNodeId, context, runId) 
 
       console.log(`[delay] scheduling continuation in ${amount} ${unit} (${ms}ms)`);
 
-      // enqueue each downstream node as a separate delayed job
+      
       for (const e of outgoing) {
         await workflowQueue.add(
           "continue",
@@ -79,7 +79,7 @@ async function walkGraph(workflowId, nodeMap, adj, startNodeId, context, runId) 
           { delay: ms, attempts: 3, backoff: { type: "exponential", delay: 2000 } }
         );
       }
-      return; // return immediately — don't block
+      return; 
     }
 
     const result = await runAction(action, context);
@@ -138,6 +138,14 @@ async function executeWorkflow(workflowId, initialContext = {}) {
     [workflowId, "running"]
   );
   const runId = runResult.insertId;
+
+  // keep only the last 100 runs per workflow to prevent unbounded table growth
+  await db.query(
+    `DELETE FROM workflow_runs WHERE workflow_id = ? AND id NOT IN (
+      SELECT id FROM (SELECT id FROM workflow_runs WHERE workflow_id = ? ORDER BY id DESC LIMIT 100) t
+    )`,
+    [workflowId, workflowId]
+  );
 
   try {
     const { nodeMap, adj, rootId } = await buildGraph(workflowId);

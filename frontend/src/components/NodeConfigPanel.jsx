@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Copy, Check, Settings } from "lucide-react";
+import { Copy, Check, Settings, RefreshCw } from "lucide-react";
 
 const inputClass = "w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-lg py-2 px-3 text-white placeholder-slate-500 outline-none transition-all duration-200 text-sm";
 const labelClass = "block text-xs font-medium text-slate-400 mb-1.5";
 
+function generateSecret() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 function NodeConfigPanel({ node, updateNodeConfig }) {
   const [copied, setCopied] = useState(false);
+  const [copiedSecret, setCopiedSecret] = useState(false);
 
   if (!node) {
     return (
@@ -22,13 +28,24 @@ function NodeConfigPanel({ node, updateNodeConfig }) {
   const { type, config = {} } = node.data;
   const update = (key, value) => updateNodeConfig(node.id, key, value);
 
-  const webhookUrl = config.endpoint ? `http://localhost:3000/webhook/${config.endpoint}` : "";
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const webhookUrl = config.endpoint
+    ? config.secret
+      ? `${apiBase}/webhook/${config.endpoint}/${config.secret}`
+      : `${apiBase}/webhook/${config.endpoint}`
+    : "";
 
   const copyWebhook = () => {
     if (!webhookUrl) return;
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const copySecret = () => {
+    navigator.clipboard.writeText(config.secret);
+    setCopiedSecret(true);
+    setTimeout(() => setCopiedSecret(false), 1500);
   };
 
   return (
@@ -164,6 +181,35 @@ function NodeConfigPanel({ node, updateNodeConfig }) {
                 className={inputClass}
                 placeholder="order-created"
               />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className={labelClass} style={{marginBottom: 0}}>Secret Token</label>
+                <button
+                  onClick={() => update("secret", generateSecret())}
+                  className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  <RefreshCw size={11} /> Generate
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={config.secret || ""}
+                  onChange={(e) => update("secret", e.target.value)}
+                  className={`${inputClass} font-mono`}
+                  placeholder="auto-generate or enter manually"
+                />
+                {config.secret && (
+                  <button
+                    onClick={copySecret}
+                    className="flex-shrink-0 p-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors"
+                  >
+                    {copiedSecret ? <Check size={13} /> : <Copy size={13} />}
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 mt-1">Include this in your webhook URL for security</p>
             </div>
 
             {webhookUrl && (

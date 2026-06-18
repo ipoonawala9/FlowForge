@@ -118,7 +118,7 @@ function Register() {
 
           <button
             type="button"
-            onClick={() => window.location.href = "http://localhost:3000/auth/google"}
+            onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`}
             className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white rounded-xl py-3 px-4 transition-all duration-200 mb-6 font-medium"
           >
             <svg width="18" height="18" viewBox="0 0 18 18">
