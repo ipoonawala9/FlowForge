@@ -1,6 +1,19 @@
 const { body } = require("express-validator");
 
 const registerValidation = [
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Name is required")
+    .isLength({ max: 100 })
+    .withMessage("Name is too long"),
+
+  body("phone")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 30 })
+    .withMessage("Phone number is too long"),
+
   body("email")
     .isEmail()
     .withMessage("Valid email required"),

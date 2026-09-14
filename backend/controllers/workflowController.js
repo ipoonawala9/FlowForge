@@ -13,10 +13,10 @@ async function getWorkflows(req, res) {
 async function createWorkflow(req, res) {
   try {
     const [rows] = await require("../config/db").query(
-      "SELECT COUNT(*) as count FROM workflows WHERE user_id = ?",
+      "SELECT COUNT(*) as count FROM workflows WHERE user_id = $1",
       [req.userId]
     );
-    if (rows[0].count >= 20) {
+    if (parseInt(rows[0].count) >= 20) {
       return res.status(400).json({ message: "Workflow limit reached (20 max). Delete an existing workflow to create a new one." });
     }
     const workflow = await workflowService.createWorkflow(req.body.name, req.userId);

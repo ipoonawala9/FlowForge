@@ -10,5 +10,6 @@ router.post("/auth/register", registerValidation, validateRequest, authControlle
 router.post("/auth/login", loginValidation, validateRequest, authController.login);
 router.get("/auth/me", authenticate, authController.me);
 router.put("/auth/password", authenticate, authController.changePassword);
+router.put("/auth/profile", authenticate, authController.updateProfile);
 
 module.exports = router;

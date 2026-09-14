@@ -4,6 +4,7 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
+const { sendWelcomeEmail } = require("../services/emailService");
 
 // configure Google strategy
 passport.use(new GoogleStrategy(
@@ -17,18 +18,29 @@ passport.use(new GoogleStrategy(
       const email = profile.emails?.[0]?.value;
       if (!email) return done(new Error("No email from Google profile"));
 
+      const displayName = profile.displayName || email.split("@")[0];
+
       // find existing user or create one
       const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
 
       let user = rows[0];
+      let isNewUser = false;
 
       if (!user) {
         // create user with a random unusable password (they'll always use Google)
-        const [result] = await db.query(
-          "INSERT INTO users (email, password) VALUES (?, ?)",
-          [email, `google_oauth_${profile.id}`]
+        const [insertRows] = await db.query(
+          "INSERT INTO users (email, password, name) VALUES (?, ?, ?) RETURNING id",
+          [email, `google_oauth_${profile.id}`, displayName]
         );
-        user = { id: result.insertId, email };
+        user = { id: insertRows[0].id, email, name: displayName };
+        isNewUser = true;
+      }
+
+      if (isNewUser) {
+        // fire welcome email in background — don't block login on SMTP
+        sendWelcomeEmail({ name: user.name, email: user.email }).catch((err) =>
+          console.warn("[welcome email] failed to send:", err.message)
+        );
       }
 
       return done(null, user);

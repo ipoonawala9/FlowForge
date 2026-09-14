@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import api from "../api/api";
 
 const AuthContext = createContext();
@@ -7,13 +7,17 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
 
-  // fetch user info whenever token changes
-  useEffect(() => {
+  const fetchUser = useCallback(() => {
     if (!token) { setUser(null); return; }
-    api.get("/auth/me")
+    return api.get("/auth/me")
       .then((res) => setUser(res.data))
       .catch(() => { localStorage.removeItem("token"); setToken(null); });
   }, [token]);
+
+  // fetch user info whenever token changes
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   const login = (jwt) => {
     localStorage.setItem("token", jwt);
@@ -26,8 +30,11 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // call after updating profile (name/phone) so the sidebar/avatar refresh immediately
+  const refreshUser = () => fetchUser();
+
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
+    <AuthContext.Provider value={{ token, user, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

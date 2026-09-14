@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
-import { Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
+import { Mail, Lock, User, Phone, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
 import FlowForgeLogo from "../components/FlowForgeLogo";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 
 function Register() {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -35,22 +36,14 @@ function Register() {
     e?.preventDefault();
     setError("");
 
-    if (!email || !password || !confirm) {
-      setError("All fields are required");
-      return;
-    }
-    if (password !== confirm) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
+    if (!name.trim()) { setError("Name is required"); return; }
+    if (!email || !password || !confirm) { setError("All fields are required"); return; }
+    if (password !== confirm) { setError("Passwords do not match"); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
 
     try {
       setLoading(true);
-      await api.post("/auth/register", { email, password });
+      await api.post("/auth/register", { name: name.trim(), phone: phone.trim() || undefined, email, password });
       const res = await api.post("/auth/login", { email, password });
       login(res.data.token);
       navigate("/dashboard");
@@ -60,6 +53,8 @@ function Register() {
       setLoading(false);
     }
   };
+
+  const inputClass = "w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-500 outline-none transition-all duration-200";
 
   return (
     <div className="min-h-screen bg-[#0f1117] flex">
@@ -83,7 +78,7 @@ function Register() {
               <span className="gradient-text">in minutes.</span>
             </h2>
             <p className="text-slate-400 text-lg">
-              Join thousands of teams saving hours every week with FlowForge.
+              Connect your tools and automate repetitive work — no code needed.
             </p>
           </motion.div>
 
@@ -101,12 +96,12 @@ function Register() {
       </div>
 
       {/* Right panel */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md py-8"
         >
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <FlowForgeLogo size={32} />
@@ -137,6 +132,41 @@ function Register() {
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
+            {/* Name + Phone row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Full Name <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ibrahim"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Phone <span className="text-slate-600 font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
               <div className="relative">
@@ -146,11 +176,12 @@ function Register() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-500 outline-none transition-all duration-200"
+                  className={inputClass}
                 />
               </div>
             </div>
 
+            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
               <div className="relative">
@@ -160,7 +191,7 @@ function Register() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-500 outline-none transition-all duration-200"
+                  className={inputClass}
                 />
               </div>
               {password && (
@@ -175,6 +206,7 @@ function Register() {
               )}
             </div>
 
+            {/* Confirm */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Confirm Password</label>
               <div className="relative">
@@ -184,7 +216,7 @@ function Register() {
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl py-3 pl-10 pr-4 text-white placeholder-slate-500 outline-none transition-all duration-200"
+                  className={inputClass}
                 />
               </div>
             </div>
@@ -205,11 +237,10 @@ function Register() {
               disabled={loading}
               className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 px-4 transition-all duration-200 flex items-center justify-center gap-2 glow-sm mt-2"
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>Create account <ArrowRight size={16} /></>
-              )}
+              {loading
+                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <>Create account <ArrowRight size={16} /></>
+              }
             </button>
           </form>
 

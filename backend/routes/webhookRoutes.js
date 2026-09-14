@@ -11,8 +11,8 @@ router.post("/webhook/:endpoint/:secret", async (req, res) => {
     const [actions] = await db.query(
       `SELECT workflow_id FROM workflow_actions
        WHERE action_type = 'webhook'
-       AND JSON_UNQUOTE(JSON_EXTRACT(action_config, '$.endpoint')) = ?
-       AND JSON_UNQUOTE(JSON_EXTRACT(action_config, '$.secret')) = ?`,
+       AND action_config->>'endpoint' = $1
+       AND action_config->>'secret' = $2`,
       [endpoint, secret]
     );
 
@@ -29,7 +29,7 @@ router.post("/webhook/:endpoint/:secret", async (req, res) => {
   }
 });
 
-// backwards compatible route — no secret (existing workflows still work)
+// backwards compatible route — no secret
 router.post("/webhook/:endpoint", async (req, res) => {
   try {
     const { endpoint } = req.params;
@@ -37,7 +37,7 @@ router.post("/webhook/:endpoint", async (req, res) => {
     const [actions] = await db.query(
       `SELECT workflow_id FROM workflow_actions
        WHERE action_type = 'webhook'
-       AND JSON_UNQUOTE(JSON_EXTRACT(action_config, '$.endpoint')) = ?`,
+       AND action_config->>'endpoint' = $1`,
       [endpoint]
     );
 

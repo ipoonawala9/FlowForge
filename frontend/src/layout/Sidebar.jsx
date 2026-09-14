@@ -18,6 +18,8 @@ function Sidebar() {
     navigate("/");
   };
 
+  const initials = (user?.name || user?.email || "?").slice(0, 2).toUpperCase();
+
   return (
     <div className="w-60 bg-[#13151f] border-r border-white/5 h-screen flex flex-col flex-shrink-0">
       {/* Logo */}
@@ -52,11 +54,15 @@ function Sidebar() {
       {/* User info + logout */}
       <div className="p-3 border-t border-white/5 space-y-1">
         {user && (
-          <div className="px-3 py-2 mb-1">
-            <p className="text-white text-xs font-medium truncate">{user.email}</p>
-            <p className="text-slate-600 text-xs mt-0.5">
-              Since {new Date(user.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-            </p>
+          <div className="flex items-center gap-2.5 px-3 py-2 mb-1">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600
+                            flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+              {initials}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-white text-xs font-medium truncate">{user.name || user.email.split("@")[0]}</p>
+              <p className="text-slate-600 text-xs truncate">{user.email}</p>
+            </div>
           </div>
         )}
         <button

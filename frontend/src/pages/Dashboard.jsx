@@ -79,7 +79,7 @@ function Dashboard() {
     return "Good evening";
   };
 
-  const firstName = user?.email?.split("@")[0] || "";
+  const firstName = (user?.name || user?.email?.split("@")[0] || "").split(" ")[0];
 
   const filtered = workflows.filter((w) =>
     w.name.toLowerCase().includes(search.toLowerCase())

@@ -14,6 +14,7 @@ const {
 const { createWorkflowValidation } = require("../validators/workflowValidator");
 const validateRequest = require("../middleware/validateRequest");
 const executionService = require("../services/executionService");
+const { getRunSteps } = require("../controllers/runStepController");
 
 router.get("/", authenticate, getWorkflows);
 router.post("/", authenticate, createWorkflowValidation, validateRequest, createWorkflow);
@@ -21,6 +22,7 @@ router.get("/:id", authenticate, getWorkflowById);
 router.patch("/:id", authenticate, renameWorkflow);
 router.delete("/:id", authenticate, deleteWorkflow);
 router.get("/:id/runs", authenticate, getWorkflowRuns);
+router.get("/:id/runs/:runId/steps", authenticate, getRunSteps);
 router.post("/:id/execute", authenticate, async (req, res) => {
   try {
     const workflowId = parseInt(req.params.id);

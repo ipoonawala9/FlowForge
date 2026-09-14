@@ -2,7 +2,7 @@ const db = require("../config/db");
 
 async function getActionsByWorkflow(workflowId) {
   const [rows] = await db.query(
-    `SELECT * FROM workflow_actions WHERE workflow_id = ? ORDER BY sequence_order ASC`,
+    "SELECT * FROM workflow_actions WHERE workflow_id = $1 ORDER BY sequence_order ASC",
     [workflowId]
   );
   return rows;
@@ -10,22 +10,19 @@ async function getActionsByWorkflow(workflowId) {
 
 async function getEdgesByWorkflow(workflowId) {
   const [rows] = await db.query(
-    `SELECT * FROM workflow_edges WHERE workflow_id = ?`,
+    "SELECT * FROM workflow_edges WHERE workflow_id = $1",
     [workflowId]
   );
   return rows;
 }
 
-/**
- * Replaces all actions and edges for a workflow atomically.
- * actions: [{ node_id, action_type, action_config, sequence_order }]
- * edges:   [{ source_node_id, target_node_id, branch }]
- */
 async function replaceActionsAndEdges(workflowId, actions, edges = []) {
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
 
+    // Use ? placeholders throughout — db.getConnection()'s query wrapper
+    // converts ? → $N before sending to pg, so mixing $1 here would produce $$1.
     await conn.query("DELETE FROM workflow_edges WHERE workflow_id = ?", [workflowId]);
     await conn.query("DELETE FROM workflow_actions WHERE workflow_id = ?", [workflowId]);
 
@@ -54,20 +51,21 @@ async function replaceActionsAndEdges(workflowId, actions, edges = []) {
   }
 }
 
-// kept for backward compat with createAction route
 async function createAction(workflowId, actionType, actionConfig, sequenceOrder) {
   const nodeId = `node_${Date.now()}`;
-  const [result] = await db.query(
+  const [rows] = await db.query(
     `INSERT INTO workflow_actions (workflow_id, node_id, action_type, action_config, sequence_order)
-     VALUES (?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
     [workflowId, nodeId, actionType, JSON.stringify(actionConfig), sequenceOrder]
   );
-  return { id: result.insertId, workflow_id: workflowId, node_id: nodeId, action_type: actionType, action_config: actionConfig, sequence_order: sequenceOrder };
+  return {
+    id: rows[0].id,
+    workflow_id: workflowId,
+    node_id: nodeId,
+    action_type: actionType,
+    action_config: actionConfig,
+    sequence_order: sequenceOrder
+  };
 }
 
-module.exports = {
-  createAction,
-  getActionsByWorkflow,
-  getEdgesByWorkflow,
-  replaceActionsAndEdges,
-};
+module.exports = { createAction, getActionsByWorkflow, getEdgesByWorkflow, replaceActionsAndEdges };

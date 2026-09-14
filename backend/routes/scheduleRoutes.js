@@ -40,7 +40,8 @@ router.post("/:id/schedule", authenticate, async (req, res) => {
     await db.query(
       `INSERT INTO workflow_schedules (workflow_id, cron_expression)
        VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE cron_expression = VALUES(cron_expression), is_active = 1`,
+       ON CONFLICT (workflow_id)
+       DO UPDATE SET cron_expression = EXCLUDED.cron_expression, is_active = TRUE`,
       [workflowId, cron_expression]
     );
 
@@ -62,7 +63,7 @@ router.delete("/:id/schedule", authenticate, async (req, res) => {
     if (!workflow) return res.status(403).json({ message: "Unauthorized" });
 
     await db.query(
-      "UPDATE workflow_schedules SET is_active = 0 WHERE workflow_id = ?",
+      "UPDATE workflow_schedules SET is_active = FALSE WHERE workflow_id = ?",
       [workflowId]
     );
 
