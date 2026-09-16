@@ -1,0 +1,46 @@
+services:
+  db:
+    # Pin to YOUR major version. Check first:
+    #   docker exec flowforge-postgres psql -U postgres -c "SELECT version();"
+    image: postgres:17
+    container_name: flowforge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in the .env next to this file}
+      POSTGRES_DB: ${DB_NAME:-flowforge}
+    ports:
+      - "5433:5432"
+    volumes:
+      - flowforge_pgdata:/var/lib/postgresql/data
+      # Numbered so Postgres runs them in the right order — it executes this
+      # directory alphabetically, and "migration_..." sorts before "schema.sql".
+      - ./backend/config/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./backend/config/migration_001_user_profile.sql:/docker-entrypoint-initdb.d/02_user_profile.sql:ro
+      - ./backend/config/migration_002_run_steps.sql:/docker-entrypoint-initdb.d/03_run_steps.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-flowforge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: flowforge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    # appendonly keeps BullMQ's queued jobs across restarts.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - flowforge_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  flowforge_pgdata:
+  flowforge_redisdata:
